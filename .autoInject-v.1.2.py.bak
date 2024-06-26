@@ -1,0 +1,87 @@
+import requests
+import argparse
+import warnings
+from urllib3.exceptions import NotOpenSSLWarning
+
+# Ignore the NotOpenSSLWarning
+warnings.simplefilter("ignore", NotOpenSSLWarning)
+
+def make_request(method, url, headers, body, proxy=None):
+    if proxy:
+        proxies = {
+            'http': proxy,
+            'https': proxy
+        }
+        return requests.request(method, url, headers=headers, data=body, proxies=proxies)
+    else:
+        return requests.request(method, url, headers=headers, data=body, verify=False)
+
+def convert_raw_http_to_requests(file_path, conn, custom_headers, proxy=None):
+    with open(file_path, 'r') as file:
+        raw_request = file.readlines()
+
+    # Extract the request line (method, URL, and HTTP version)
+    request_line = raw_request[0].strip()
+    method, url, _ = request_line.split()
+
+    # Extract the headers
+    headers = {}
+    for line in raw_request[1:]:
+        line = line.strip()
+        if line == '':
+            break
+        key, value = line.split(':', 1)
+        headers[key.strip()] = value.strip()
+
+    # Update headers with custom headers
+    headers.update(custom_headers)
+
+    # Extract the body if it exists
+    body = None
+    if '\n\n' in raw_request:
+        body = '\n\n'.join(raw_request.split('\n\n')[1:]).strip()
+
+    # Full URL
+    full_url = conn + headers['Host'] + url
+
+    # Make the request
+    response = make_request(method, full_url, headers, body, proxy)
+
+    return method, full_url, headers, body, response
+
+def inject_headers(method, full_url, headers, body, header_inject, proxy=None):
+    for key in headers.keys():
+        injected_headers = headers.copy()
+        injected_headers[key] = header_inject
+        response = make_request(method, full_url, injected_headers, body, proxy)
+        print(f"Injected Request ({key}) - Status Code: {response.status_code}")
+        #print(f"Injected Request ({key}) - Response Text: {response.text}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert a raw HTTP request to a Python requests call")
+    parser.add_argument('file_path', type=str, help="Path to the file containing the raw HTTP request")
+    parser.add_argument('--unsecure', action='store_true', help="Use HTTP instead of HTTPS")
+    parser.add_argument('--header', action='append', help="Custom header in the form key:value. Can be used multiple times.")
+    parser.add_argument('--hInject', type=str, help="Header value to inject into each header one by one")
+    parser.add_argument('--proxy', type=str, help="Proxy server (e.g., http://proxy.example.com:8080)")
+
+    args = parser.parse_args()
+    file_path = args.file_path
+    conn = "http://" if args.unsecure else "https://"
+
+    # Parse custom headers
+    custom_headers = {}
+    if args.header:
+        for header in args.header:
+            key, value = header.split(':', 1)
+            custom_headers[key.strip()] = value.strip()
+
+    method, full_url, headers, body, response = convert_raw_http_to_requests(file_path, conn, custom_headers, args.proxy)
+
+    # Print the response
+    print(f"Request - Status Code: {response.status_code}")
+    #print(f"Request - Response Text: {response.text}")
+
+    # Inject headers if the hInject argument is provided
+    if args.hInject:
+        inject_headers(method, full_url, headers, body, args.hInject, args.proxy)
