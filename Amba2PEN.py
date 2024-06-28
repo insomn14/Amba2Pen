@@ -78,73 +78,113 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
     logging.info("Parameter Injection Testing")
 
     # Parse the URL and extract query parameters
-    url_parts = urlparse(full_url)
-    query_params = parse_qs(url_parts.query)
+    try:
+        url_parts = urlparse(full_url)
+        query_params = parse_qs(url_parts.query)
+        if not query_params:
+            logging.warning("No query parameters found for injection.")
+            return
+    except Exception as e:
+        logging.error(f"Error parsing URL parameters: {e}")
+        return
 
     # Inject parameters into the URL query string
     for key in query_params.keys():
-        injected_params = query_params.copy()
-        injected_params[key] = [param_inject]
-        new_query = urlencode(injected_params, doseq=True)
-        new_url_parts = url_parts._replace(query=new_query)
-        new_url = urlunparse(new_url_parts)
-        response = make_request(method, new_url, headers, body, proxy)
-        if filter_status_code(response.status_code):
-            logging.info(f"{method} - {full_url}")
-            logging.info(f"Injected URL Parameter ({key}) - Status Code: {response.status_code}")
+        try:
+            injected_params = query_params.copy()
+            injected_params[key] = [param_inject]
+            new_query = urlencode(injected_params, doseq=True)
+            new_url_parts = url_parts._replace(query=new_query)
+            new_url = urlunparse(new_url_parts)
+            response = make_request(method, new_url, headers, body, proxy)
+            if filter_status_code(response.status_code):
+                logging.info(f"{method} - {full_url}")
+                logging.info(f"Injected URL Parameter ({key}) - Status Code: {response.status_code}")
+        except Exception as e:
+            logging.error(f"Error injecting URL parameter ({key}): {e}")
 
     # Inject parameters into the body based on content type
     content_type = headers.get('Content-Type', '').split(';')[0]  # Normalize content-type
 
     if content_type == 'application/json':
-        params = json.loads(body)
-        for key in params.keys():
-            injected_params = params.copy()
-            injected_params[key] = param_inject
-            injected_body = json.dumps(injected_params)
-            response = make_request(method, full_url, headers, injected_body, proxy)
-            if filter_status_code(response.status_code):
-                logging.info(f"Injected Body Parameter ({key}) - Status Code: {response.status_code}")
+        try:
+            params = json.loads(body)
+            if not params:
+                logging.warning("No JSON body parameters found for injection.")
+                return
+            for key in params.keys():
+                injected_params = params.copy()
+                injected_params[key] = param_inject
+                injected_body = json.dumps(injected_params)
+                response = make_request(method, full_url, headers, injected_body, proxy)
+                if filter_status_code(response.status_code):
+                    logging.info(f"Injected Body Parameter ({key}) - Status Code: {response.status_code}")
+        except Exception as e:
+            logging.error(f"Error injecting JSON body parameter: {e}")
 
     elif content_type in ['application/xml', 'text/xml']:
-        root = ET.fromstring(body)
-        for elem in root.iter():
-            if elem.text:
-                injected_root = ET.fromstring(body)
-                injected_elem = injected_root.find(elem.tag)
-                injected_elem.text = param_inject
-                injected_body = ET.tostring(injected_root, encoding='unicode')
-                response = make_request(method, full_url, headers, injected_body, proxy)
-                if filter_status_code(response.status_code):
-                    logging.info(f"Injected XML Body Parameter ({elem.tag}) - Status Code: {response.status_code}")
+        try:
+            root = ET.fromstring(body)
+            if not list(root):
+                logging.warning("No XML body parameters found for injection.")
+                return
+            for elem in root.iter():
+                if elem.text:
+                    injected_root = ET.fromstring(body)
+                    injected_elem = injected_root.find(elem.tag)
+                    injected_elem.text = param_inject
+                    injected_body = ET.tostring(injected_root, encoding='unicode')
+                    response = make_request(method, full_url, headers, injected_body, proxy)
+                    if filter_status_code(response.status_code):
+                        logging.info(f"Injected XML Body Parameter ({elem.tag}) - Status Code: {response.status_code}")
+        except Exception as e:
+            logging.error(f"Error injecting XML body parameter: {e}")
 
     elif content_type == 'application/x-www-form-urlencoded':
-        params = parse_qs(body)
-        for key in params.keys():
-            injected_params = params.copy()
-            injected_params[key] = [param_inject]
-            injected_body = urlencode(injected_params, doseq=True)
-            response = make_request(method, full_url, headers, injected_body, proxy)
-            if filter_status_code(response.status_code):
-                logging.info(f"Injected Body Parameter ({key}) - Status Code: {response.status_code}")
-
-    elif content_type == 'text/html':
-        soup = BeautifulSoup(body, 'html.parser')
-        for tag in soup.find_all():
-            if tag.string:
-                original_text = tag.string
-                tag.string.replace_with(param_inject)
-                injected_body = str(soup)
+        try:
+            params = parse_qs(body)
+            if not params:
+                logging.warning("No form-urlencoded body parameters found for injection.")
+                return
+            for key in params.keys():
+                injected_params = params.copy()
+                injected_params[key] = [param_inject]
+                injected_body = urlencode(injected_params, doseq=True)
                 response = make_request(method, full_url, headers, injected_body, proxy)
                 if filter_status_code(response.status_code):
-                    logging.info(f"Injected HTML Body Parameter ({tag.name}) - Status Code: {response.status_code}")
-                tag.string.replace_with(original_text)  # revert for next iteration
+                    logging.info(f"Injected Body Parameter ({key}) - Status Code: {response.status_code}")
+        except Exception as e:
+            logging.error(f"Error injecting form-urlencoded body parameter: {e}")
+
+    elif content_type == 'text/html':
+        try:
+            soup = BeautifulSoup(body, 'html.parser')
+            if not soup.find_all():
+                logging.warning("No HTML body parameters found for injection.")
+                return
+            for tag in soup.find_all():
+                if tag.string:
+                    original_text = tag.string
+                    tag.string.replace_with(param_inject)
+                    injected_body = str(soup)
+                    response = make_request(method, full_url, headers, injected_body, proxy)
+                    if filter_status_code(response.status_code):
+                        logging.info(f"Injected HTML Body Parameter ({tag.name}) - Status Code: {response.status_code}")
+                    tag.string.replace_with(original_text)  # revert for next iteration
+        except Exception as e:
+            logging.error(f"Error injecting HTML body parameter: {e}")
 
     elif content_type == 'text/plain':
-        injected_body = param_inject
-        response = make_request(method, full_url, headers, injected_body, proxy)
-        if filter_status_code(response.status_code):
-            logging.info(f"Injected Plain Text Body - Status Code: {response.status_code}")
+        try:
+            if not body:
+                logging.warning("No plain text body found for injection.")
+                return
+            injected_body = param_inject
+            response = make_request(method, full_url, headers, injected_body, proxy)
+            if filter_status_code(response.status_code):
+                logging.info(f"Injected Plain Text Body - Status Code: {response.status_code}")
+        except Exception as e:
+            logging.error(f"Error injecting plain text body: {e}")
 
     elif content_type == 'application/octet-stream':
         logging.warning("Parameter injection for application/octet-stream is not supported.")
@@ -190,9 +230,8 @@ if __name__ == "__main__":
     parser.add_argument('--unwanted_http_check', action='store_true', help="Check unwanted HTTP methods")
     parser.add_argument('--pInject', type=str, help="Parameter value to inject into each parameter one by one")
     parser.add_argument('--path_traversal', type=str, help="Path to the file containing path traversal payloads")
-    parser.add_argument('--log_level', type=str, default='DEBUG', help="Set the logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    parser.add_argument('--log_level', type=str, choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], default='INFO', help='Set the logging level')
     parser.add_argument('--code', type=str, help="Comma-separated list of status codes to filter (e.g., 200,400)")
-
 
     args = parser.parse_args()
 
