@@ -63,6 +63,7 @@ def inject_headers(method, full_url, headers, body, header_inject, proxy=None):
         injected_headers[key] = header_inject
         response = make_request(method, full_url, injected_headers, body, proxy)
         if filter_status_code(response.status_code):
+            logging.info(f"{method} - {full_url}")
             logging.info(f"Injected Request Headers: ({key}) - Status Code: {response.status_code}")
 
 def check_unwanted_http_methods(method, full_url, headers, body, proxy=None):
@@ -89,6 +90,7 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
         new_url = urlunparse(new_url_parts)
         response = make_request(method, new_url, headers, body, proxy)
         if filter_status_code(response.status_code):
+            logging.info(f"{method} - {full_url}")
             logging.info(f"Injected URL Parameter ({key}) - Status Code: {response.status_code}")
 
     # Inject parameters into the body based on content type
@@ -238,6 +240,7 @@ if __name__ == "__main__":
     method, full_url, headers, body, response = convert_raw_http_to_requests(args.file_path, conn, custom_headers, args.proxy)
 
     if filter_status_code(response.status_code):
+        logging.info(f"{method} - {full_url}")
         logging.info(f"Original Request - Status Code: {response.status_code}")
 
     if args.hInject:
