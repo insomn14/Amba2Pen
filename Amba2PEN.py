@@ -6,7 +6,7 @@ import colorlog
 import json
 import xml.etree.ElementTree as ET
 from urllib3.exceptions import InsecureRequestWarning
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse, urljoin
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from bs4 import BeautifulSoup
 
 # Suppress SSL warnings
@@ -62,13 +62,16 @@ def inject_headers(method, full_url, headers, body, header_inject, proxy=None):
         injected_headers = headers.copy()
         injected_headers[key] = header_inject
         response = make_request(method, full_url, injected_headers, body, proxy)
-        logging.info(f"Injected Request Headers: ({key})")
+        if filter_status_code(response.status_code):
+            logging.info(f"Injected Request Headers: ({key}) - Status Code: {response.status_code}")
 
 def check_unwanted_http_methods(method, full_url, headers, body, proxy=None):
     logging.info("Unwanted HTTP Method Check")
     unwanted_methods = ["TRACE", "TRACK", "OPTIONS", "PUT", "DELETE", "CONNECT", "PATCH", "PROPFIND", "PROPPATCH", "MKCOL", "COPY", "MOVE", "LOCK", "UNLOCK"]
     for unwanted_method in unwanted_methods:
         response = make_request(unwanted_method, full_url, headers, body, proxy)
+        if filter_status_code(response.status_code):
+            logging.info(f"Unwanted HTTP Method ({unwanted_method}) - Status Code: {response.status_code}")
 
 def inject_parameters(method, full_url, headers, body, param_inject, proxy=None):
     logging.info("Parameter Injection Testing")
@@ -85,7 +88,8 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
         new_url_parts = url_parts._replace(query=new_query)
         new_url = urlunparse(new_url_parts)
         response = make_request(method, new_url, headers, body, proxy)
-        logging.info(f"Injected URL Parameter ({key}) - Status Code: {response.status_code}")
+        if filter_status_code(response.status_code):
+            logging.info(f"Injected URL Parameter ({key}) - Status Code: {response.status_code}")
 
     # Inject parameters into the body based on content type
     content_type = headers.get('Content-Type', '').split(';')[0]  # Normalize content-type
@@ -97,7 +101,8 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
             injected_params[key] = param_inject
             injected_body = json.dumps(injected_params)
             response = make_request(method, full_url, headers, injected_body, proxy)
-            logging.info(f"Injected Body Parameter ({key}) - Status Code: {response.status_code}")
+            if filter_status_code(response.status_code):
+                logging.info(f"Injected Body Parameter ({key}) - Status Code: {response.status_code}")
 
     elif content_type in ['application/xml', 'text/xml']:
         root = ET.fromstring(body)
@@ -108,7 +113,8 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
                 injected_elem.text = param_inject
                 injected_body = ET.tostring(injected_root, encoding='unicode')
                 response = make_request(method, full_url, headers, injected_body, proxy)
-                logging.info(f"Injected XML Body Parameter ({elem.tag}) - Status Code: {response.status_code}")
+                if filter_status_code(response.status_code):
+                    logging.info(f"Injected XML Body Parameter ({elem.tag}) - Status Code: {response.status_code}")
 
     elif content_type == 'application/x-www-form-urlencoded':
         params = parse_qs(body)
@@ -117,7 +123,8 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
             injected_params[key] = [param_inject]
             injected_body = urlencode(injected_params, doseq=True)
             response = make_request(method, full_url, headers, injected_body, proxy)
-            logging.info(f"Injected Body Parameter ({key}) - Status Code: {response.status_code}")
+            if filter_status_code(response.status_code):
+                logging.info(f"Injected Body Parameter ({key}) - Status Code: {response.status_code}")
 
     elif content_type == 'text/html':
         soup = BeautifulSoup(body, 'html.parser')
@@ -127,13 +134,15 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
                 tag.string.replace_with(param_inject)
                 injected_body = str(soup)
                 response = make_request(method, full_url, headers, injected_body, proxy)
-                logging.info(f"Injected HTML Body Parameter ({tag.name}) - Status Code: {response.status_code}")
+                if filter_status_code(response.status_code):
+                    logging.info(f"Injected HTML Body Parameter ({tag.name}) - Status Code: {response.status_code}")
                 tag.string.replace_with(original_text)  # revert for next iteration
 
     elif content_type == 'text/plain':
         injected_body = param_inject
         response = make_request(method, full_url, headers, injected_body, proxy)
-        logging.info(f"Injected Plain Text Body - Status Code: {response.status_code}")
+        if filter_status_code(response.status_code):
+            logging.info(f"Injected Plain Text Body - Status Code: {response.status_code}")
 
     elif content_type == 'application/octet-stream':
         logging.warning("Parameter injection for application/octet-stream is not supported.")
@@ -143,6 +152,7 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
 
     else:
         logging.warning(f"Content-Type {content_type} is not supported for parameter injection.")
+
 def test_path_traversal(method, full_url, headers, body, payload_file, proxy=None):
     logging.info("Path Traversal Testing")
     
@@ -159,7 +169,14 @@ def test_path_traversal(method, full_url, headers, body, payload_file, proxy=Non
         new_url = urlunparse(new_url_parts)
         
         response = make_request(method, new_url, headers, body, proxy)
-        logging.info(f"Path Traversal Payload ({payload}) - Status Code: {response.status_code}")
+        if filter_status_code(response.status_code):
+            logging.info(f"Path Traversal Payload ({payload}) - Status Code: {response.status_code}")
+
+def filter_status_code(status_code):
+    global status_code_filter
+    if status_code_filter is None:
+        return True
+    return status_code in status_code_filter
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Convert a raw HTTP request to a Python requests call")
@@ -172,10 +189,10 @@ if __name__ == "__main__":
     parser.add_argument('--pInject', type=str, help="Parameter value to inject into each parameter one by one")
     parser.add_argument('--path_traversal', type=str, help="Path to the file containing path traversal payloads")
     parser.add_argument('--log_level', type=str, default='DEBUG', help="Set the logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    parser.add_argument('--code', type=str, help="Comma-separated list of status codes to filter (e.g., 200,400)")
+
 
     args = parser.parse_args()
-    file_path = args.file_path
-    conn = "http://" if args.unsecure else "https://"
 
     # Set the logging level based on the argument
     log_level = getattr(logging, args.log_level.upper(), logging.DEBUG)
@@ -183,7 +200,7 @@ if __name__ == "__main__":
     # Configure logging with color
     log_colors = {
         'DEBUG': 'blue',
-        'INFO': 'green',  # changed from 'magenta' to 'green'
+        'INFO': 'green',
         'WARNING': 'yellow',
         'ERROR': 'red',
         'CRITICAL': 'red'
@@ -199,6 +216,15 @@ if __name__ == "__main__":
     logger.addHandler(handler)
     logger.setLevel(log_level)
 
+    # Suppress lower-level logs from the requests library
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
+    logging.getLogger('requests').setLevel(logging.WARNING)
+
+    # Parse status codes filter
+    status_code_filter = None
+    if args.code:
+        status_code_filter = set(map(int, args.code.split(',')))
+
     # Parse custom headers
     custom_headers = {}
     if args.header:
@@ -206,24 +232,22 @@ if __name__ == "__main__":
             key, value = header.split(':', 1)
             custom_headers[key.strip()] = value.strip()
 
-    method, full_url, headers, body, response = convert_raw_http_to_requests(file_path, conn, custom_headers, args.proxy)
+    # Determine connection type
+    conn = 'http://' if args.unsecure else 'https://'
 
-    # Print the response
-    logging.debug(f"Request - Status Code: {response.status_code} {response.reason}")
-    logging.debug(f"Request - Response Length: {len(response.content)}")
+    method, full_url, headers, body, response = convert_raw_http_to_requests(args.file_path, conn, custom_headers, args.proxy)
 
-    # Inject headers if the hInject argument is provided
+    if filter_status_code(response.status_code):
+        logging.info(f"Original Request - Status Code: {response.status_code}")
+
     if args.hInject:
         inject_headers(method, full_url, headers, body, args.hInject, args.proxy)
 
-    # Check unwanted HTTP methods if the unwanted_http_check argument is provided
     if args.unwanted_http_check:
         check_unwanted_http_methods(method, full_url, headers, body, args.proxy)
 
-    # Inject parameters if the pInject argument is provided
     if args.pInject:
         inject_parameters(method, full_url, headers, body, args.pInject, args.proxy)
 
-    # Test path traversal if the path_traversal argument is provided
     if args.path_traversal:
         test_path_traversal(method, full_url, headers, body, args.path_traversal, args.proxy)
