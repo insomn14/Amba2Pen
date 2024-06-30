@@ -13,14 +13,18 @@ from bs4 import BeautifulSoup
 warnings.simplefilter('ignore', InsecureRequestWarning)
 
 def make_request(method, url, headers, body, proxy=None):
-    if proxy:
-        proxies = {
-            'http': proxy,
-            'https': proxy
-        }
-        return requests.request(method, url, headers=headers, data=body, proxies=proxies, verify=False, timeout=60)
-    else:
-        return requests.request(method, url, headers=headers, data=body, verify=False, timeout=60)
+    try:
+        if proxy:
+            proxies = {
+                'http': proxy,
+                'https': proxy
+            }
+            return requests.request(method, url, headers=headers, data=body, proxies=proxies, verify=False, timeout=30)
+        else:
+            return requests.request(method, url, headers=headers, data=body, verify=False, timeout=30)
+    except Exception as e:
+        logging.error(f"Error while request: {e}")
+        return None
 
 def convert_raw_http_to_requests(file_path, conn, custom_headers, proxy=None):
     with open(file_path, 'r') as file:
