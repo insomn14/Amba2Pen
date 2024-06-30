@@ -83,7 +83,6 @@ def inject_parameters(method, full_url, headers, body, param_inject, proxy=None)
         query_params = parse_qs(url_parts.query)
         if not query_params:
             logging.warning("No query parameters found for injection.")
-            return
     except Exception as e:
         logging.error(f"Error parsing URL parameters: {e}")
         return
