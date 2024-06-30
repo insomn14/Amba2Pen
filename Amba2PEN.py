@@ -40,14 +40,14 @@ def convert_raw_http_to_requests(file_path, conn, custom_headers, proxy=None):
         key, value = line.split(':', 1)
         headers[key.strip()] = value.strip()
 
-    # Update headers with custom headers
-    headers.update(custom_headers)
-
     # Extract the body if it exists
     body = parts[1] if len(parts) > 1 else None
 
     # Full URL
     full_url = conn + headers['Host'] + url
+
+    # Update headers with custom headers
+    headers.update(custom_headers)
 
     # Make the request
     response = make_request(method, full_url, headers, body, proxy)
