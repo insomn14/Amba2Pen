@@ -59,7 +59,7 @@ def convert_raw_http_to_requests(file_path, conn, custom_headers, proxy=None):
     return method, full_url, headers, body, response
 
 def inject_headers(method, full_url, headers, body, header_inject, proxy=None):
-    logging.info(f"Header Injection Testing {header_inject}")
+    logging.info(f"Header Injection Testing - {header_inject}")
     for key in headers.keys():
         if key.lower() == 'host':
             continue
