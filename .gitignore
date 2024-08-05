@@ -1,2 +1,5 @@
 .*.bak
 .vscode/
+.backup/
+.backup/.*.bak
+venv
