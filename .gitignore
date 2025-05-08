@@ -3,3 +3,5 @@
 .backup/
 .backup/.*.bak
 venv
+**/__pycache__/
+*.py[cod]
