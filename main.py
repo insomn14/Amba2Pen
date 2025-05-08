@@ -13,16 +13,16 @@ from modules.http_methods import check_unwanted_http_methods
 warnings.simplefilter('ignore', InsecureRequestWarning)
 
 def main():
-    parser = argparse.ArgumentParser(description="Convert a raw HTTP request to a Python requests call")
-    parser.add_argument('file_path', type=str, help="Path to the file containing the raw HTTP request")
-    parser.add_argument('--unsecure', action='store_true', help="Use HTTP instead of HTTPS")
-    parser.add_argument('--header', action='append', help="Custom header in the form key:value. Can be used multiple times.")
-    parser.add_argument('--hInject', type=str, help="Header value to inject into each header one by one")
-    parser.add_argument('--proxy', type=str, help="Proxy server (e.g., http://proxy.example.com:8080)")
-    parser.add_argument('--unwanted_http_check', action='store_true', help="Check unwanted HTTP methods")
-    parser.add_argument('--pInject', type=str, help="Parameter value to inject into each parameter one by one")
-    parser.add_argument('--path_traversal', type=str, help="Path to the file containing path traversal payloads")
-    parser.add_argument('--log_level', type=str, default='DEBUG', help="Set the logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL)")
+    parser = argparse.ArgumentParser(description="A security testing tool for analyzing HTTP requests and identifying potential vulnerabilities")
+    parser.add_argument('file', help="Path to a file containing a raw HTTP request to analyze")
+    parser.add_argument('-u', '--unsecure', action='store_true', help="Use HTTP instead of HTTPS for connections")
+    parser.add_argument('-H', '--header', action='append', help="Add custom HTTP header format (e.g. 'Host: example.com')")
+    parser.add_argument('-hi', '--header-inject', help="Payload to use for testing header injection vulnerabilities")
+    parser.add_argument('-m', '--methods', action='store_true', help="Test for potentially dangerous HTTP methods like PUT, DELETE, etc.")
+    parser.add_argument('-pi', '--param-inject', help="Payload to use for testing parameter injection vulnerabilities") 
+    parser.add_argument('-pt', '--path', help="File containing payloads for testing path traversal vulnerabilities")
+    parser.add_argument('-p', '--proxy', help="URL of proxy server to route requests through (e.g. http://127.0.0.1:8080)")
+    parser.add_argument('-l', '--log', default='DEBUG', help="Set logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)")
 
     args = parser.parse_args()
     conn = "http://" if args.unsecure else "https://"
