@@ -1,23 +1,25 @@
 # Amba2Pen - Advanced Security Testing Tool
 
-Amba2Pen adalah tool security testing yang powerful untuk melakukan analisis dan testing berbagai jenis vulnerability injection pada HTTP requests. Tool ini dirancang untuk pentester dan security researcher yang membutuhkan automation dalam testing keamanan aplikasi web.
+Amba2Pen is a powerful security testing tool for analyzing and testing various types of vulnerability injection in HTTP requests. This tool is designed for pentesters and security researchers who need automation in testing web application security.
 
 ## 🚀 Features
 
 ### 🔧 Core Features
-- **Raw HTTP Request Processing**: Membaca dan memproses raw HTTP request dari file
-- **Multi-Threading Support**: Testing paralel untuk performa optimal
-- **Retry Mechanism**: Auto-retry untuk response 503/596
-- **Sleep Control**: Delay antar request untuk stealth testing
-- **Status Code Filtering**: Filter output berdasarkan status code
-- **Colored Output**: Status code dengan warna untuk easy reading
-- **Exception Handling**: Graceful error handling dan keyboard interrupt support
+- **Raw HTTP Request Processing**: Reads and processes raw HTTP requests from files
+- **Multi-Threading Support**: Parallel testing for optimal performance
+- **Retry Mechanism**: Automatically retries for 503/596 responses
+- **Sleep Control**: Delay between requests for stealth testing
+- **Status Code Filtering**: Filters output based on status code
+- **Colored Output**: Colored status codes for easy reading
+- **Exception Handling**: Graceful error handling and keyboard interrupt support
 
 ### 💉 Injection Testing
 - **Header Injection**: Testing header injection vulnerabilities
-- **Parameter Injection**: Testing parameter injection pada berbagai content type (JSON, XML, Form, HTML, Plain Text)
-- **Path Traversal**: Testing path traversal vulnerabilities
-- **HTTP Methods**: Testing dangerous HTTP methods (TRACE, TRACK, OPTIONS, PUT, DELETE, etc.)
+- **Parameter Injection**: Testing parameter injection on various content types (JSON, XML, Forms, HTML, Plain Text)
+- **Path Traversal**: Tests for path traversal vulnerabilities
+- **HTTP Methods**: Tests malicious HTTP methods (TRACE, TRACK, OPTIONS, PUT, DELETE, etc.)
+
+Translated with DeepL.com (free version)
 
 ### 📁 File-Based Testing
 - **Header Names File**: Test custom header names dari file
