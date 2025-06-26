@@ -1,133 +1,431 @@
-# Amba2PEN (I'm About to Pentest)
+# Amba2Pen - Advanced Security Testing Tool
 
-Amba2PEN is a Python-based tool designed to streamline the penetration testing process by automating various pentest tasks. This tool allows pentesters to conduct multiple tests directly from the terminal, minimizing repetitive actions and improving efficiency.
+Amba2Pen adalah tool security testing yang powerful untuk melakukan analisis dan testing berbagai jenis vulnerability injection pada HTTP requests. Tool ini dirancang untuk pentester dan security researcher yang membutuhkan automation dalam testing keamanan aplikasi web.
 
-## Features
+## 🚀 Features
 
-- **Raw HTTP Request Conversion:** Converts raw HTTP requests to Python `requests` calls for ease of testing and modification.
-- **Header Injection:** Inject custom headers into HTTP requests to test for header-related vulnerabilities.
-- **Parameter Injection:** Inject custom parameters into both URL query strings and request bodies to test for parameter manipulation vulnerabilities.
-- **Unwanted HTTP Method Testing:** Check for the presence of unwanted and potentially dangerous HTTP methods on the target server.
-- **Path Traversal Testing:** Automatically test for path traversal vulnerabilities using a list of payloads.
-- **Proxy Support:** Allows the use of proxy servers to route HTTP requests through intermediaries.
-- **Custom Logging:** Configurable logging with color-coded output for better readability and debugging.
+### 🔧 Core Features
+- **Raw HTTP Request Processing**: Membaca dan memproses raw HTTP request dari file
+- **Multi-Threading Support**: Testing paralel untuk performa optimal
+- **Retry Mechanism**: Auto-retry untuk response 503/596
+- **Sleep Control**: Delay antar request untuk stealth testing
+- **Status Code Filtering**: Filter output berdasarkan status code
+- **Colored Output**: Status code dengan warna untuk easy reading
+- **Exception Handling**: Graceful error handling dan keyboard interrupt support
 
-## Pros
+### 💉 Injection Testing
+- **Header Injection**: Testing header injection vulnerabilities
+- **Parameter Injection**: Testing parameter injection pada berbagai content type (JSON, XML, Form, HTML, Plain Text)
+- **Path Traversal**: Testing path traversal vulnerabilities
+- **HTTP Methods**: Testing dangerous HTTP methods (TRACE, TRACK, OPTIONS, PUT, DELETE, etc.)
 
-- **Automation:** Reduces the repetitive nature of common pentest tasks, allowing pentesters to focus on more complex testing.
-- **Flexibility:** Supports custom headers, proxies, and payloads, making it adaptable to various testing scenarios.
-- **Efficiency:** Combines multiple testing functionalities into one script, saving time and effort.
-- **Customization:** Easily extendable to include additional tests or modify existing ones as per requirements.
-- **Terminal-Based:** Designed to run entirely from the terminal, fitting seamlessly into existing pentest workflows.
+### 📁 File-Based Testing
+- **Header Names File**: Test custom header names dari file
+- **Payload Files**: Test multiple payloads dari file
+- **Path Traversal Payloads**: Test path traversal dengan payload file
+- **Smart Header Parsing**: Auto-clean headers ending with ':' or ': '
 
-## Cons
+## 📦 Installation
 
-- **Limited Content-Type Support:** Parameter injection supports a limited set of content types (JSON, XML, form-urlencoded, HTML, and plain text).
-- **Basic Logging:** While color-coded, the logging might not be detailed enough for complex debugging.
-- **Initial Setup:** Requires a good understanding of HTTP requests and penetration testing to set up and use effectively.
-- **Proxy Configuration:** Proxy setup might require additional configuration, especially in complex network environments.
+### Prerequisites
+```bash
+# Python 3.7+
+python3 --version
 
-## Installation
-
-1. **Clone the repository:**
-    ```bash
-    git clone https://github.com/yourusername/amba2pen.git
-    cd amba2pen
-    ```
-
-2. **Install the required dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-## Usage
-
-Run the script with the required arguments to perform various pentest tasks. For example, to convert a raw HTTP request:
-
-```
-python amba2pen.py raw_request.txt --header "Custom-Header: value" --proxy "http://proxy.example.com:8080" --log_level DEBUG
+# Install dependencies
+pip install requests colorama beautifulsoup4 colorlog
 ```
 
-For path traversal testing:
+### Setup
+```bash
+# Clone repository
+git clone <repository-url>
+cd Amba2Pen
 
-```
-python amba2pen.py raw_request.txt --path_traversal payloads.txt
-```
-
-### Command-Line Arguments
-
-- `file_path`: Path to the file containing the raw HTTP request.
-- `--unsecure`: Use HTTP instead of HTTPS.
-- `--header`: Custom header in the form key:value. Can be used multiple times.
-- `--hInject`: Header value to inject into each header one by one.
-- `--proxy`: Proxy server (e.g., http://proxy.example.com:8080).
-- `--unwanted_http_check`: Check unwanted HTTP methods.
-- `--pInject`: Parameter value to inject into each parameter one by one.
-- `--path_traversal`: Path to the file containing path traversal payloads.
-- `--log_level`: Set the logging level (e.g., DEBUG, INFO, WARNING, ERROR, CRITICAL).
-
-## Examples
-
-### Convert Raw HTTP Request to Python Requests Call
-
-```
-python amba2pen.py raw_request.txt --header "Custom-Header: value" --proxy "http://proxy.example.com:8080" --log_level DEBUG
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### Inject Custom Headers
+## 🎯 Usage
 
-```
-python amba2pen.py raw_request.txt --hInject "Injected-Header-Value" --log_level INFO
-```
-
-### Check for Unwanted HTTP Methods
-
-```
-python amba2pen.py raw_request.txt --unwanted_http_check --log_level INFO
+### Basic Syntax
+```bash
+python3 main.py <request_file> [options]
 ```
 
-### Inject Custom Parameters
+### Arguments Overview
 
+| Argument | Description | Example |
+|----------|-------------|---------|
+| `file` | Raw HTTP request file | `request.txt` |
+| `-u, --unsecure` | Use HTTP instead of HTTPS | `-u` |
+| `-H, --header` | Add custom headers | `-H "Host: example.com"` |
+| `-hi, --header-inject` | Single header injection | `-hi "payload"` |
+| `-hif, --header-inject-file` | Header names from file | `-hif headers.txt` |
+| `-hipf, --header-inject-payload-file` | Payloads from file to existing headers | `-hipf payloads.txt` |
+| `-pi, --param-inject` | Single parameter injection | `-pi "payload"` |
+| `-pif, --param-inject-file` | Payloads from file for parameters | `-pif payloads.txt` |
+| `-pt, --path` | Path traversal testing | `-pt payloads.txt` |
+| `-m, --methods` | Test dangerous HTTP methods | `-m` |
+| `-p, --proxy` | Proxy server | `-p "http://127.0.0.1:8080"` |
+| `-t, --thread` | Number of threads | `-t 10` |
+| `-s, --sleep` | Sleep between requests (seconds) | `-s 1.5` |
+| `-nr, --num-retries` | Retry count for 503/596 responses | `-nr 5` |
+| `-sc, --status-code` | Filter status codes | `-sc "200,500"` |
+| `-l, --log` | Logging level | `-l INFO` |
+
+## 🔍 Testing Modes
+
+### 1. Header Injection Testing
+
+#### Single Header Injection (Existing Headers)
+```bash
+# Test existing headers with single payload
+python3 main.py request.txt -hi "<script>alert(1);</script>" -t 5
 ```
-python amba2pen.py raw_request.txt --pInject "Injected-Parameter-Value" --log_level INFO
+
+#### Custom Headers from File
+```bash
+# Test custom headers from file
+python3 main.py request.txt -hif headers.txt -hi "payload" -t 10
 ```
 
-### Path Traversal Testing
-
-To test for path traversal vulnerabilities, you can use the --path_traversal argument. This feature reads a list of payloads from a specified file and tests each one against the target URL.
-
-```
-python amba2pen.py raw_request.txt --path_traversal path_traversal_payloads.txt --log_level INFO
+#### Payload File to Existing Headers
+```bash
+# Test multiple payloads on existing headers
+python3 main.py request.txt -hipf payloads.txt -t 5 -s 1
 ```
 
-### Path Traversal Payloads File
+### 2. Parameter Injection Testing
 
-Create a file with path traversal payloads, each on a new line:
-```
-../../etc/passwd
-../../../../windows/system32/drivers/etc/hosts
-../windows/system32/config/sam
-../../../../../../../../../../../../../etc/passwd
+#### Single Parameter Injection
+```bash
+# Test single payload on all parameters
+python3 main.py request.txt -pi "payload" -t 5
 ```
 
-## Contributing
+#### Payload File for Parameters
+```bash
+# Test multiple payloads on all parameters
+python3 main.py request.txt -pif payloads.txt -t 10 -s 0.5
+```
 
-Contributions are welcome! To contribute:
+### 3. Path Traversal Testing
+```bash
+# Test path traversal with payload file
+python3 main.py request.txt -pt traversal_payloads.txt -t 5 -s 1
+```
 
-	1.	Fork the repository.
-	2.	Create a new branch for your feature.
-	3.	Make your changes.
-	4.	Submit a pull request.
+### 4. HTTP Methods Testing
+```bash
+# Test dangerous HTTP methods
+python3 main.py request.txt -m -t 5 -s 0.5
+```
 
-Please ensure your code adheres to the existing coding standards and includes appropriate tests.
+## 📁 File Formats
 
-## License
+### Raw HTTP Request File
+```
+POST /api/test HTTP/1.1
+Host: example.com
+Content-Type: application/json
+Authorization: Bearer token123
+Cookie: session=abc123
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+{"id": 1, "name": "test"}
+```
 
-## Acknowledgments
+### Header Names File (`headers.txt`)
+```
+Accept
+X-Forwarded-For
+User-Agent
+Referer
+Authorization
+Cookie
+```
 
- * Thanks to the open-source community for providing various libraries and tools that made this project possible.
- * Special thanks to BeautifulSoup, requests, and colorlog for their excellent libraries.
+**Note**: Headers ending with `:` or `: ` will be automatically cleaned.
 
-Happy pentesting with Amba2PEN!
+### Payload File (`payloads.txt`)
+```
+<script>alert(1);</script>
+"><script>alert(1);</script>
+javascript:alert(1)
+'><script>alert(1);</script>
+```
+
+### Path Traversal Payloads (`traversal.txt`)
+```
+../etc/passwd
+..\..\..\windows\system32\drivers\etc\hosts
+....//....//....//etc/passwd
+%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd
+```
+
+## 🎨 Output Examples
+
+### Colored Status Codes
+- 🟢 **Green**: 200-299 (Success)
+- 🔵 **Cyan**: 300-399 (Redirect)
+- 🟡 **Yellow**: 400-499 (Client Error)
+- 🔴 **Red**: 500-599 (Server Error)
+
+### Sample Output
+```
+[14:05:13] [INFO] ✉️ Header Injection Testing
+[14:05:13] [INFO] 🔧 Using 5 thread(s)
+[14:05:13] [INFO] Target URI: https://example.com/api/test
+[14:05:13] [INFO] Payload Inject: <script>alert(1);</script>
+[14:05:13] [INFO] 📊 Total headers to test: 15
+[14:05:13] [INFO] Header 'Cookie: <script>alert(1);</script>' - Status Code: 200
+[14:05:13] [INFO] Header 'Authorization: <script>alert(1);</script>' - Status Code: 401
+[14:05:13] [INFO] ✅ Header injection testing completed
+```
+
+## ⚙️ Advanced Usage
+
+### Combined Testing
+```bash
+# Multiple injection types with threading and filtering
+python3 main.py request.txt \
+  -hi "payload" \
+  -pi "payload" \
+  -pt traversal.txt \
+  -m \
+  -t 10 \
+  -s 1 \
+  -nr 3 \
+  -sc "200,500" \
+  -l INFO
+```
+
+### Stealth Testing
+```bash
+# Slow and stealthy testing
+python3 main.py request.txt \
+  -hipf payloads.txt \
+  -t 1 \
+  -s 2 \
+  -nr 5 \
+  -sc "4xx,5xx"
+```
+
+### Performance Testing
+```bash
+# Fast testing with multiple threads
+python3 main.py request.txt \
+  -pif payloads.txt \
+  -t 20 \
+  -s 0.1 \
+  -sc "200"
+```
+
+### Comprehensive Security Testing
+```bash
+# Full security assessment
+python3 main.py request.txt \
+  -hif headers.txt -hi "XSS" \
+  -pif payloads.txt \
+  -pt traversal.txt \
+  -m \
+  -t 10 \
+  -s 1 \
+  -nr 5 \
+  -sc "200,500" \
+  -l INFO
+```
+
+## 🔧 Configuration
+
+### Logging Levels
+- `DEBUG`: Detailed debug information
+- `INFO`: General information (default)
+- `WARNING`: Warning messages
+- `ERROR`: Error messages only
+- `CRITICAL`: Critical errors only
+
+### Status Code Filtering
+```bash
+# Specific codes
+-sc "200,404,500"
+
+# Range patterns
+-sc "4xx,5xx"
+
+# Mixed
+-sc "200,4xx,500"
+```
+
+### Threading Guidelines
+- **Low traffic**: 1-5 threads
+- **Medium traffic**: 5-10 threads
+- **High traffic**: 10-20 threads
+- **Stealth mode**: 1 thread with sleep
+
+### Sleep Recommendations
+- **Stealth**: 1-3 seconds
+- **Normal**: 0.5-1 second
+- **Fast**: 0.1-0.5 seconds
+- **Aggressive**: 0 seconds
+
+## 📊 Performance Tips
+
+### Optimization Strategies
+1. **Start Small**: Begin with low thread count and increase gradually
+2. **Monitor Responses**: Watch for rate limiting or server stress
+3. **Use Sleep**: Implement delays to avoid detection
+4. **Filter Results**: Use status code filtering to focus on relevant responses
+5. **Retry Logic**: Configure retries for unstable connections
+
+### Best Practices
+- Test on authorized systems only
+- Use appropriate sleep intervals
+- Monitor server responses
+- Document testing activities
+- Stop if server shows signs of stress
+
+## 🛡️ Security Considerations
+
+### Responsible Usage
+- **Authorized testing only**: Only test systems you own or have permission
+- **Rate limiting**: Use sleep to avoid overwhelming servers
+- **Legal compliance**: Follow local laws and regulations
+- **Documentation**: Keep records of testing activities
+
+### Best Practices
+- Start with low thread count and increase gradually
+- Use sleep to avoid detection
+- Monitor server responses for rate limiting
+- Stop testing if server shows signs of stress
+- Respect robots.txt and terms of service
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+#### Import Errors
+```bash
+# Install missing dependencies
+pip install requests colorama beautifulsoup4 colorlog
+```
+
+#### File Not Found
+```bash
+# Check file paths
+ls -la request.txt
+ls -la payloads.txt
+```
+
+#### Permission Denied
+```bash
+# Check file permissions
+chmod +r request.txt
+chmod +r payloads.txt
+```
+
+#### Network Issues
+```bash
+# Test connectivity
+curl -I https://target.com
+```
+
+#### Keyboard Interrupt
+```bash
+# Tool will gracefully exit with Ctrl+C
+# No data corruption or incomplete states
+```
+
+## 📝 Examples
+
+### Complete Testing Session
+```bash
+# 1. Create request file
+cat > request.txt << 'EOF'
+POST /api/user HTTP/1.1
+Host: target.com
+Content-Type: application/json
+Authorization: Bearer token123
+
+{"id": 1, "name": "test"}
+EOF
+
+# 2. Create payload file
+cat > payloads.txt << 'EOF'
+<script>alert(1);</script>
+"><script>alert(1);</script>
+javascript:alert(1)
+EOF
+
+# 3. Create header file
+cat > headers.txt << 'EOF'
+Accept
+X-Forwarded-For
+User-Agent
+Referer
+EOF
+
+# 4. Run comprehensive test
+python3 main.py request.txt \
+  -hif headers.txt -hi "XSS" \
+  -pif payloads.txt \
+  -pt traversal.txt \
+  -m \
+  -t 5 \
+  -s 1 \
+  -nr 3 \
+  -sc "200,500" \
+  -l INFO
+```
+
+### Real-World Scenarios
+
+#### Web Application Testing
+```bash
+# Test login form for injection vulnerabilities
+python3 main.py login_request.txt \
+  -pi "admin' OR '1'='1" \
+  -pif sql_payloads.txt \
+  -t 3 \
+  -s 2 \
+  -sc "200,302"
+```
+
+#### API Security Testing
+```bash
+# Test REST API endpoints
+python3 main.py api_request.txt \
+  -hi "XSS" \
+  -pi "payload" \
+  -m \
+  -t 5 \
+  -s 1 \
+  -sc "200,400,500"
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## ⚠️ Disclaimer
+
+This tool is for educational and authorized security testing purposes only. Users are responsible for ensuring they have proper authorization before testing any systems. The authors are not responsible for any misuse of this tool.
+
+## 📞 Support
+
+For issues, questions, or contributions:
+- Create an issue on GitHub
+- Check the documentation
+- Review existing issues
+
+---
+
+**Happy Testing! 🎯**

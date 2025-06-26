@@ -1,5 +1,6 @@
 import requests
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+import time
 
 def make_request(method, url, headers, body, proxy=None):
     if proxy:
@@ -10,6 +11,20 @@ def make_request(method, url, headers, body, proxy=None):
         return requests.request(method, url, headers=headers, data=body, proxies=proxies, verify=False, timeout=60)
     else:
         return requests.request(method, url, headers=headers, data=body, verify=False, timeout=60)
+
+def make_request_with_retry(method, url, headers, body, proxy=None, num_retries=0, retry_delay=1.5, sleep_time=0):
+    """
+    Wrapper for make_request that retries if response.status_code == 503
+    """
+    attempt = 0
+    while True:
+        response = make_request(method, url, headers, body, proxy)
+        if response.status_code != 503 or response.status_code != 596 or attempt >= num_retries:
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+            return response
+        attempt += 1
+        time.sleep(retry_delay)
 
 def convert_raw_http_to_requests(file_path, conn, custom_headers, proxy=None):
     with open(file_path, 'r') as file:
