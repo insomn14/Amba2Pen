@@ -1,6 +1,6 @@
 # Amba2Pen - Advanced Security Testing Tool
 
-Amba2Pen is a powerful security testing tool for analyzing and testing various types of vulnerability injection in HTTP requests. This tool is designed for pentesters and security researchers who need automation in testing web application security.
+Amba2Pen is a powerful security testing tool for analyzing and testing various types of vulnerability injection in HTTP requests. This tool is designed for pentesters and security researchers who need automation in testing API or WEB Application security.
 
 ## 🚀 Features
 
