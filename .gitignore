@@ -6,3 +6,5 @@ venv
 **/__pycache__/
 *.py[cod]
 raw_test/
+amba2pen.py
+test_specific_params.py

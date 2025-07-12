@@ -53,28 +53,16 @@ def test_path_traversal(method, full_url, headers, body, payload_file, proxy=Non
         else:
             # Multi-thread execution
             threads = []
-            payloads_per_thread = len(payloads) // num_threads
+            chunk_size = len(payloads) // num_threads
             remaining_payloads = len(payloads) % num_threads
 
-            start_idx = 0
             for i in range(num_threads):
-                # Calculate payloads for this thread
-                thread_payloads = payloads_per_thread
-                if i < remaining_payloads:
-                    thread_payloads += 1
-
-                end_idx = start_idx + thread_payloads
-                thread_payload_list = payloads[start_idx:end_idx]
-
-                # Create and start thread
-                thread = threading.Thread(
-                    target=test_payloads_in_thread,
-                    args=(method, full_url, headers, body, thread_payload_list, proxy, i + 1, status_code_filter, num_retries, sleep_time)
-                )
+                start_index = i * chunk_size
+                end_index = (i + 1) * chunk_size if i < num_threads - 1 else len(payloads)
+                thread_payloads = payloads[start_index:end_index]
+                thread = threading.Thread(target=test_path_traversal_thread, args=(method, full_url, headers, body, thread_payloads, proxy, status_code_filter, num_retries, sleep_time), daemon=True)
                 threads.append(thread)
                 thread.start()
-
-                start_idx = end_idx
 
             # Wait for all threads to complete
             for thread in threads:
@@ -87,7 +75,7 @@ def test_path_traversal(method, full_url, headers, body, payload_file, proxy=Non
     except Exception as e:
         logging.error(f"Error during path traversal testing: {e}")
 
-def test_payloads_in_thread(method, full_url, headers, body, payloads, proxy, thread_id, status_code_filter=None, num_retries=0, sleep_time=0):
+def test_path_traversal_thread(method, full_url, headers, body, payloads, proxy, status_code_filter, num_retries, sleep_time):
     """Test payloads in a specific thread"""
     # logging.info(f"🧵 Thread {thread_id} started with {len(payloads)} payloads")
     

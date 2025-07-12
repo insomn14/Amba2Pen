@@ -48,6 +48,9 @@ def main():
         parser.add_argument('-sc', '--status-code', help="Filter specific status codes to display (e.g., '200,400,404' or '4xx,5xx'). Default: all status codes")
         parser.add_argument('-nr', '--num-retries', type=int, default=0, help="Number of retries if response is 503 (default: 0)")
         parser.add_argument('-s', '--sleep', type=float, default=0, help="Sleep time between requests in seconds (default: 0)")
+        parser.add_argument('-st', '--stress', type=int, default=0, help="Number of requests to send for stress testing (default: 0, disabled)")
+        parser.add_argument('-sp', '--specific-params', help="Comma-separated list of specific parameters to target for injection (e.g., 'id,user,name')")
+        parser.add_argument('-spf', '--specific-params-file', help="File containing specific parameter names to target for injection (one per line)")
 
         args = parser.parse_args()
         conn = "http://" if args.unsecure else "https://"
@@ -70,6 +73,48 @@ def main():
 
         method, full_url, headers, body, response = convert_raw_http_to_requests(args.file, conn, custom_headers, args.proxy)
 
+        # STRESS TEST FEATURE
+        if args.stress > 0:
+            import threading
+            from utils.request_utils import make_request_with_retry
+            import time
+
+            total_requests = args.stress
+            num_threads = max(1, args.thread)
+            status_code_filter = parse_status_codes(args.status_code)
+            results = []
+            lock = threading.Lock()
+
+            def stress_worker(thread_id, num_reqs):
+                for i in range(num_reqs):
+                    try:
+                        resp = make_request_with_retry(method, full_url, headers, body, args.proxy, args.num_retries, 1.5, args.sleep)
+                        if should_display_status_code(resp.status_code, status_code_filter):
+                            color = get_status_color(resp.status_code)
+                            with lock:
+                                logging.info(f"🔥 Stress [Thread-{thread_id}] Status Code: {color}{resp.status_code} {resp.reason}{Style.RESET_ALL} | Length: {len(resp.content)}")
+                    except Exception as e:
+                        with lock:
+                            logging.error(f"🔥 Stress [Thread-{thread_id}] Error: {e}")
+
+            # Distribute requests among threads
+            per_thread = total_requests // num_threads
+            remainder = total_requests % num_threads
+            threads = []
+            for i in range(num_threads):
+                n = per_thread + (1 if i < remainder else 0)
+                t = threading.Thread(target=stress_worker, args=(i+1, n), daemon=True)
+                threads.append(t)
+                t.start()
+            try:
+                for t in threads:
+                    t.join()
+            except KeyboardInterrupt:
+                logging.warning("[!] Stress test interrupted by user. Exiting...")
+                sys.exit(0)
+            logging.info(f"[+] Stress test completed. Total requests sent: {total_requests}")
+            sys.exit(0)
+
         # Print the response with colored status code
         status_color = get_status_color(response.status_code)
         logging.info(f"[+] Positive Test Request - Status Code: {status_color}{response.status_code} {response.reason}{Style.RESET_ALL}")
@@ -90,26 +135,40 @@ def main():
         if args.methods:
             check_unwanted_http_methods(method, full_url, headers, body, args.proxy, status_code_filter, args.thread, args.num_retries, args.sleep)
 
+        # Parse specific parameters to target
+        specific_params = []
+        if args.specific_params:
+            specific_params = [param.strip() for param in args.specific_params.split(',') if param.strip()]
+            logging.info(f"🎯 Targeting specific parameters: {specific_params}")
+        elif args.specific_params_file:
+            try:
+                with open(args.specific_params_file, 'r') as file:
+                    specific_params = [line.strip() for line in file.readlines() if line.strip()]
+                logging.info(f"🎯 Targeting specific parameters from file: {specific_params}")
+            except FileNotFoundError:
+                logging.error(f"Specific parameters file not found: {args.specific_params_file}")
+                specific_params = []
+
         # Inject parameters if the param-inject argument is provided
         if args.param_inject:
-            inject_parameters(method, full_url, headers, body, args.param_inject, args.proxy, status_code_filter, args.num_retries, args.sleep)
+            inject_parameters(method, full_url, headers, body, args.param_inject, args.proxy, status_code_filter, args.num_retries, args.sleep, specific_params)
         
         # Inject parameters from file if the param-inject-file argument is provided
         if args.param_inject_file:
-            inject_parameters_from_file(method, full_url, headers, body, args.param_inject_file, args.proxy, args.thread, status_code_filter, args.num_retries, args.sleep)
+            inject_parameters_from_file(method, full_url, headers, body, args.param_inject_file, args.proxy, args.thread, status_code_filter, args.num_retries, args.sleep, specific_params)
 
         # Test path traversal if the path argument is provided
         if args.path:
             test_path_traversal(method, full_url, headers, body, args.path, args.proxy, args.thread, status_code_filter, args.num_retries, args.sleep)
 
     except KeyboardInterrupt:
-        print(f"\n{Fore.YELLOW}[!] Script interrupted by user. Exiting gracefully...{Style.RESET_ALL}")
+        logging.warning("[!] Script interrupted by user. Exiting gracefully...")
         sys.exit(0)
     except FileNotFoundError as e:
-        print(f"\n{Fore.RED}[!] Error: File not found - {str(e)}{Style.RESET_ALL}")
+        logging.error(f"[!] Error: File not found - {str(e)}")
         sys.exit(1)
     except Exception as e:
-        print(f"\n{Fore.RED}[!] An unexpected error occurred: {str(e)}{Style.RESET_ALL}")
+        logging.error(f"[!] An unexpected error occurred: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":

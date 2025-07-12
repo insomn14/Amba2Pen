@@ -133,7 +133,8 @@ def inject_headers_from_file(method, full_url, headers, body, header_file, paylo
                 # Create and start thread
                 thread = threading.Thread(
                     target=inject_headers_in_thread,
-                    args=(method, full_url, headers, body, thread_header_list, payload, proxy, i + 1, status_code_filter, num_retries, sleep_time)
+                    args=(method, full_url, headers, body, thread_header_list, payload, proxy, i + 1, status_code_filter, num_retries, sleep_time),
+                    daemon=True
                 )
                 threads.append(thread)
                 thread.start()
@@ -222,7 +223,8 @@ def inject_headers_with_payload_file(method, full_url, headers, body, payload_fi
                 # Create and start thread
                 thread = threading.Thread(
                     target=inject_header_payloads_in_thread,
-                    args=(method, full_url, headers, body, thread_combination_list, proxy, i + 1, status_code_filter, num_retries, sleep_time)
+                    args=(method, full_url, headers, body, thread_combination_list, proxy, i + 1, status_code_filter, num_retries, sleep_time),
+                    daemon=True
                 )
                 threads.append(thread)
                 thread.start()

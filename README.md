@@ -67,6 +67,8 @@ python3 main.py <request_file> [options]
 | `-hipf, --header-inject-payload-file` | Payloads from file to existing headers | `-hipf payloads.txt` |
 | `-pi, --param-inject` | Single parameter injection | `-pi "payload"` |
 | `-pif, --param-inject-file` | Payloads from file for parameters | `-pif payloads.txt` |
+| `-sp, --specific-params` | Target specific parameters (comma-separated) | `-sp "id,user,name"` |
+| `-spf, --specific-params-file` | Target specific parameters from file | `-spf params.txt` |
 | `-pt, --path` | Path traversal testing | `-pt payloads.txt` |
 | `-m, --methods` | Test dangerous HTTP methods | `-m` |
 | `-p, --proxy` | Proxy server | `-p "http://127.0.0.1:8080"` |
@@ -110,6 +112,15 @@ python3 main.py request.txt -pi "payload" -t 5
 ```bash
 # Test multiple payloads on all parameters
 python3 main.py request.txt -pif payloads.txt -t 10 -s 0.5
+```
+
+#### Target Specific Parameters
+```bash
+# Test single payload on specific parameters only
+python3 main.py request.txt -pi "payload" -sp "id,user,name" -t 5
+
+# Test multiple payloads on specific parameters from file
+python3 main.py request.txt -pif payloads.txt -spf target_params.txt -t 10
 ```
 
 ### 3. Path Traversal Testing
@@ -163,6 +174,16 @@ javascript:alert(1)
 ..\..\..\windows\system32\drivers\etc\hosts
 ....//....//....//etc/passwd
 %2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd
+```
+
+### Specific Parameters File (`target_params.txt`)
+```
+id
+user
+name
+email
+token
+session
 ```
 
 ## 🎨 Output Examples
@@ -234,6 +255,18 @@ python3 main.py request.txt \
   -t 10 \
   -s 1 \
   -nr 5 \
+  -sc "200,500" \
+  -l INFO
+```
+
+### Targeted Parameter Testing
+```bash
+# Focus on specific sensitive parameters
+python3 main.py request.txt \
+  -pi "SQL_INJECTION" \
+  -sp "id,user_id,session_token" \
+  -t 5 \
+  -s 1 \
   -sc "200,500" \
   -l INFO
 ```
