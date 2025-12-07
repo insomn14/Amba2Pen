@@ -19,8 +19,6 @@ Amba2Pen is a powerful security testing tool for analyzing and testing various t
 - **Path Traversal**: Tests for path traversal vulnerabilities
 - **HTTP Methods**: Tests malicious HTTP methods (TRACE, TRACK, OPTIONS, PUT, DELETE, etc.)
 
-Translated with DeepL.com (free version)
-
 ### 📁 File-Based Testing
 - **Header Names File**: Test custom header names dari file
 - **Payload Files**: Test multiple payloads dari file
